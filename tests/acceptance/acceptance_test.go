@@ -294,7 +294,7 @@ func TestPublicRESTAndMCP(t *testing.T) {
 	c.request(t, "GET", "/api/v1/transactions", nil, false, 401)
 	c.request(t, "POST", "/mcp", map[string]any{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": map[string]any{}}, false, 401)
 	rows := []importRow{
-		{OccurredAt: "2025-05-10T12:30:00+08:00", Direction: "expense", Amount: "999.00", Currency: "CNY", Merchant: "Synthetic Mall camera shop", Description: "Camera accessories; Synthetic Gadget product unconfirmed (synthetic fixture)", Category: "electronics", ExternalID: source + "-flow", Original: map[string]any{"fixture": source, "merchant_raw": "Synthetic Mall camera shop", "amount_text": "999.00", "product_confirmed": false}},
+		{OccurredAt: "2025-05-10T12:30:00+08:00", Direction: "expense", Amount: "999.00", Currency: "CNY", Merchant: "Synthetic Mall camera shop", Description: "Camera accessories; Synthetic Gadget product unconfirmed (synthetic fixture)", Category: "electronics", ExternalID: source + "-gadget", Original: map[string]any{"fixture": source, "merchant_raw": "Synthetic Mall camera shop", "amount_text": "999.00", "product_confirmed": false}},
 		{OccurredAt: "2025-05-11T13:30:00+08:00", Direction: "income", Amount: "9007199254740993.0001", Currency: "CNY", Merchant: "Precision fixture", Description: "Synthetic exact decimal boundary", Category: "test", Original: map[string]any{"fixture": source, "amount_text": "9007199254740993.0001"}},
 	}
 	input := importRequest{Source: source, Key: "initial", Records: rows}
@@ -344,7 +344,7 @@ func TestPublicRESTAndMCP(t *testing.T) {
 	})
 
 	t.Run("RESTFiltersAndPagination", func(t *testing.T) {
-		params := url.Values{"source": {source}, "search": {"Yifang"}, "direction": {"expense"}, "category": {"electronics"}, "min_amount": {"999"}, "max_amount": {"999"}, "from": {"2025-01-01T00:00:00Z"}, "to": {"2026-01-01T00:00:00Z"}, "limit": {"1"}, "offset": {"0"}}
+		params := url.Values{"source": {source}, "search": {"Synthetic Mall"}, "direction": {"expense"}, "category": {"electronics"}, "min_amount": {"999"}, "max_amount": {"999"}, "from": {"2025-01-01T00:00:00Z"}, "to": {"2026-01-01T00:00:00Z"}, "limit": {"1"}, "offset": {"0"}}
 		page := decoded[transactionPage](t, c.request(t, "GET", "/api/v1/transactions?"+params.Encode(), nil, true, 200))
 		if page.Total != 2 || len(page.Items) != 1 || page.Limit != 1 || page.Offset != 0 {
 			t.Fatalf("combined filters/pagination failed: %+v", page)
@@ -400,7 +400,7 @@ func TestPublicRESTAndMCP(t *testing.T) {
 	})
 
 	t.Run("MCPTransactionCandidateAndExactMoney", func(t *testing.T) {
-		result := c.query(t, `SELECT occurred_at,merchant,amount,description FROM pam.transactions WHERE source=$1 AND merchant ILIKE $2 AND occurred_at >= $3::timestamptz AND occurred_at < $4::timestamptz ORDER BY occurred_at`, []any{source, "%Yifang%", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z"}, false)
+		result := c.query(t, `SELECT occurred_at,merchant,amount,description FROM pam.transactions WHERE source=$1 AND merchant ILIKE $2 AND occurred_at >= $3::timestamptz AND occurred_at < $4::timestamptz ORDER BY occurred_at`, []any{source, "%Synthetic Mall%", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z"}, false)
 		if result.RowCount != 2 || text(t, result.Rows[0][1]) != "Synthetic Mall camera shop" || !strings.Contains(text(t, result.Rows[0][3]), "unconfirmed") {
 			t.Fatal("candidate search lost payment evidence or uncertainty")
 		}
@@ -412,7 +412,7 @@ func TestPublicRESTAndMCP(t *testing.T) {
 
 	t.Run("AssetCRUDAndSQLCorrelation", func(t *testing.T) {
 		price, date := "999.00", "2025-05-10"
-		draft := assetInput{Name: "Synthetic Synthetic Gadget candidate " + source, Category: "photography", Brand: "Synthetic Gadget", Model: "Flow 2 Pro", PurchaseDate: &date, PurchasePrice: &price, Currency: "CNY", Merchant: rows[0].Merchant, RelatedTransactionID: &transactionID, Notes: "Synthetic fixture; product association remains unconfirmed", Status: "active"}
+		draft := assetInput{Name: "Synthetic Gadget candidate " + source, Category: "photography", Brand: "Synthetic Gadget", Model: "Model A", PurchaseDate: &date, PurchasePrice: &price, Currency: "CNY", Merchant: rows[0].Merchant, RelatedTransactionID: &transactionID, Notes: "Synthetic fixture; product association remains unconfirmed", Status: "active"}
 		missing := "00000000-0000-0000-0000-000000000000"
 		invalid := draft
 		invalid.RelatedTransactionID = &missing

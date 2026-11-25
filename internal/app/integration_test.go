@@ -87,7 +87,7 @@ func TestImportIdempotencyAndTraceability(t *testing.T) {
 		t.Fatalf("original provenance count=%d: %v", count, err)
 	}
 	got, err := s.GetTransaction(ctx, *first.Rows[0].TransactionID)
-	if err != nil || got.Amount != "999.0000" || !strings.Contains(string(got.Original), "Yifang City") {
+	if err != nil || got.Amount != "999.0000" || !strings.Contains(string(got.Original), "Synthetic Mall") {
 		t.Fatalf("transaction provenance: %+v %v", got, err)
 	}
 	req.IdempotencyKey = "first"
@@ -150,7 +150,7 @@ func TestAssetCRUDAndTransactionFilters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page, err := s.ListTransactions(ctx, domain.TransactionFilter{Source: req.Source, Search: "Yifang", Direction: "expense", From: "2025-01-01T00:00:00Z", To: "2026-01-01T00:00:00Z", MinAmount: "998.99", MaxAmount: "999", Limit: 1})
+	page, err := s.ListTransactions(ctx, domain.TransactionFilter{Source: req.Source, Search: "Synthetic Mall", Direction: "expense", From: "2025-01-01T00:00:00Z", To: "2026-01-01T00:00:00Z", MinAmount: "998.99", MaxAmount: "999", Limit: 1})
 	if err != nil || page.Total != 1 || len(page.Items) != 1 {
 		t.Fatalf("filtered transactions: %+v %v", page, err)
 	}

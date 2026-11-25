@@ -9,7 +9,7 @@ import (
 
 // fixtureRow 返回携带原始来源的合法流水输入，供指纹和边界测试独立修改。
 func fixtureRow() domain.ImportRecord {
-	return domain.ImportRecord{OccurredAt: "2025-01-02T12:00:00+08:00", Direction: "expense", Amount: "999.00", Currency: "CNY", Merchant: "Yifang City", Description: "Electronic payment", Original: json.RawMessage(`{"amount":"999.00","merchant":"Yifang City"}`)}
+	return domain.ImportRecord{OccurredAt: "2025-01-02T12:00:00+08:00", Direction: "expense", Amount: "999.00", Currency: "CNY", Merchant: "Synthetic Mall", Description: "Electronic payment", Original: json.RawMessage(`{"amount":"999.00","merchant":"Synthetic Mall"}`)}
 }
 
 // TestFingerprintCanonicalization 验证等价金额与时区共享候选指纹，而金额变化保留差异；t 是测试上下文。
