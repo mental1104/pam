@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#122334">
+  <title>PAM · 个人资产管理</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <!-- 本地图标定义仅表达标准账单来源；银行使用通用建筑图形，不下载外部商标或推断支付渠道。 -->
+  <svg class="platform-symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="platform-icon-all" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#edf3f8"/><g fill="#506f89"><rect x="8" y="8" width="6" height="6" rx="2"/><rect x="18" y="8" width="6" height="6" rx="2"/><rect x="8" y="18" width="6" height="6" rx="2"/><rect x="18" y="18" width="6" height="6" rx="2"/></g></symbol>
+      <symbol id="platform-icon-wechat" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#20ad64"/><path d="M23.5 13c0 4.1-3.9 7.5-8.7 7.5-1 0-2-.2-2.9-.4L7.5 22l1-4C6.8 16.7 6 15 6 13c0-4.1 3.9-7.5 8.8-7.5s8.7 3.4 8.7 7.5Z" fill="#fff"/><path d="M26.5 21c0-3.4-3.1-6.1-7-6.1s-7 2.7-7 6.1 3.1 6 7 6c.8 0 1.6-.1 2.3-.3l3.5 1.5-.8-3.2c1.3-1.1 2-2.5 2-4Z" fill="#e6f8ee" stroke="#20ad64" stroke-width="1.1"/><g fill="#20ad64"><circle cx="11.5" cy="12" r="1.1"/><circle cx="18" cy="12" r="1.1"/><circle cx="17" cy="20" r=".9"/><circle cx="22" cy="20" r=".9"/></g></symbol>
+      <symbol id="platform-icon-alipay" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#1677e8"/><text x="16" y="24" text-anchor="middle" font-family="PingFang SC,Microsoft YaHei,sans-serif" font-size="25" font-weight="600" fill="#fff">支</text></symbol>
+      <symbol id="platform-icon-cmb" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#fbebed"/><g fill="none" stroke="#b73647" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 10-6 10 6H6ZM6 26h20M8 23h16M10 15v6M16 15v6M22 15v6"/></g></symbol>
+      <symbol id="platform-icon-ccb" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#eaf1fb"/><g fill="none" stroke="#316da8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 10-6 10 6H6ZM6 26h20M8 23h16M10 15v6M16 15v6M22 15v6"/></g></symbol>
+      <symbol id="platform-icon-other" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#eef1f3"/><g fill="none" stroke="#697b89" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 10-5 10 5-10 5-10-5ZM6 17l10 5 10-5M6 22l10 5 10-5"/></g></symbol>
+    </defs>
+  </svg>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <section id="auth-view" class="auth-screen" aria-labelledby="auth-title">
+    <div class="auth-art" aria-hidden="true"><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="orbit orbit-three"></span><div class="auth-monogram">P</div></div>
+    <div class="auth-card">
+      <div class="brand auth-brand"><img src="/favicon.svg" width="42" height="42" alt=""><span>PAM<small>PERSONAL ASSET MANAGER</small></span></div>
+      <p class="eyebrow">你的记录，井然有序</p>
+      <h1 id="auth-title">属于你的<br>个人资产空间。</h1>
+      <p class="auth-description">从一笔消费到一件珍藏，<br>让收支与物品都有迹可循。</p>
+      <p id="session-loading" class="muted" role="status">正在连接你的 NAS…</p>
+      <div id="auth-actions" hidden>
+        <a id="nas-login" class="button primary login-button" hidden>使用 NAS 账号登录 </a>
+        <details id="token-details" class="token-details">
+          <summary>使用访问密钥</summary>
+          <form id="token-form">
+            <label class="field">访问密钥<input id="access-token" name="token" type="password" autocomplete="off" required placeholder="输入 PAM 访问密钥"></label>
+            <button class="button primary" type="submit">进入空间 </button>
+          </form>
+        </details>
+      </div>
+      <p id="auth-error" class="error-message" role="alert" hidden></p>
+      <button id="session-retry" type="button" class="text-button" hidden>重新连接</button>
+      <p class="auth-footer"><span class="status-dot"></span> 私有部署 · 数据保存在你的 NAS</p>
+    </div>
+  </section>
+
+  <div id="app" class="app-shell" hidden>
+    <aside class="sidebar" aria-label="主导航">
+      <a class="brand sidebar-brand" href="/"><img src="/favicon.svg" width="38" height="38" alt=""><span>PAM<small>个人资产管理</small></span></a>
+      <div class="nav-label">我的空间</div>
+      <nav>
+        <button type="button" class="nav-item active" data-view="transactions" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h4"/></svg><span>交易账本</span></button>
+        <button type="button" class="nav-item" data-view="assets"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9"/></svg><span>实物资产</span></button>
+        <button type="button" class="nav-item" data-view="audit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M6 15V9M12 15V4M18 15v-4"/></svg><span>SQL 审计</span></button>
+      </nav>
+      <div class="sidebar-bottom"><div class="private-mark" aria-hidden="true">◈</div><p>一个长期有序的<br>私人数据空间。</p><div class="sidebar-status"><span class="status-dot"></span> NAS 自托管</div></div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar"><div class="breadcrumb">我的空间 <span>/</span> <strong id="breadcrumb-title">交易账本</strong></div><div class="topbar-actions"><time id="today"></time><button type="button" id="logout" class="text-button">退出登录 </button></div></header>
+      <main id="main-content" class="main-content" tabindex="-1">
+        <div class="page-heading"><div><p class="eyebrow">PERSONAL ASSET MANAGER</p><h1 id="page-title">交易账本<span class="title-dot">.</span></h1><p id="page-description" class="page-description">回溯每一笔收支，找到生活留下的线索。</p></div><div class="private-pill"><span class="status-dot"></span> 你的数据 · 你的 NAS</div></div>
+        <section id="ledger-metrics" class="metrics" aria-label="记录概况">
+          <article class="metric-card"><span class="metric-icon" aria-hidden="true">↔</span><div><p>交易记录</p><strong id="transaction-total">—</strong><span class="metric-unit">笔</span><small>已保存的完整记录</small></div></article>
+          <article class="metric-card"><span class="metric-icon accent" aria-hidden="true">⌕</span><div><p>当前筛选</p><strong id="filtered-total">—</strong><span class="metric-unit">笔</span><small>符合账本筛选条件</small></div></article>
+          <article class="metric-card"><span class="metric-icon warm" aria-hidden="true">▧</span><div><p>实物资产</p><strong id="asset-total">—</strong><span class="metric-unit">件</span><small>认真记录，安心持有</small></div></article>
+        </section>
+        <p id="global-notice" class="notice" role="status" hidden></p>
+
+        <section id="transactions-view" aria-label="交易记录">
+          <details class="filter-panel" id="import-review-panel">
+            <summary>导入复核与来源范围</summary>
+            <p>截图识别在 iOS 本地完成。这里继续处理已保存的待核事项；日期范围仅表示已有记录，不代表账单完整覆盖。</p>
+            <button type="button" id="review-refresh" class="button secondary">刷新待核与范围</button>
+            <p id="review-notice" role="status"></p>
+            <div id="source-ranges"></div>
+            <div id="review-items"></div>
+            <button type="button" id="review-previous" class="button secondary">上一页</button>
+            <button type="button" id="review-next" class="button secondary">下一页</button>
+          </details>
+          <form id="filters" class="filter-panel">
+            <div class="filter-primary"><label class="search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span class="sr-only">搜索商户或摘要</span><input name="search" placeholder="搜索商户、交易摘要…" type="search" autocomplete="off"></label><label class="field direction-field"><span class="sr-only">收支方向</span><select name="direction"><option value="">全部收支</option><option value="expense">仅支出</option><option value="income">仅收入</option></select></label></div>
+            <div class="filter-secondary"><label class="field">开始日期<input name="from" type="date"></label><label class="field">结束日期<input name="to" type="date"></label><label class="field">最低金额<input name="min_amount" type="text" inputmode="decimal" pattern="[0-9]{1,16}(\.[0-9]{1,4})?" placeholder="不限"></label><label class="field">最高金额<input name="max_amount" type="text" inputmode="decimal" pattern="[0-9]{1,16}(\.[0-9]{1,4})?" placeholder="不限"></label><div class="filter-buttons"><button type="button" id="reset-filters" class="button secondary">重置</button><button type="submit" class="button primary">筛选记录 </button></div></div>
+            <div class="platform-filter-block">
+              <span id="platform-filter-title" class="platform-filter-title">账单来源</span>
+              <input id="platform-filter-value" name="platform" type="hidden" value="">
+              <div id="platform-filters" class="platform-filters" role="group" aria-labelledby="platform-filter-title" aria-describedby="platform-filter-note"></div>
+              <p id="platform-filter-note" class="platform-filter-note">同一笔记录可有多个账单来源，仍只计一笔；账单来源不代表实际支付渠道。再次点击可取消筛选。</p>
+            </div>
+            <details class="more-filters"><summary>更多条件</summary><div class="form-grid"><label class="field">分类<input name="category" placeholder="全部分类"></label><label class="field">导入来源（高级）<input name="source" placeholder="全部导入来源"></label></div></details>
+          </form>
+          <div class="records-panel"><div class="panel-heading"><div class="panel-title"><h2>收支明细</h2><span id="transaction-count" class="count-badge">—</span></div><span class="sort-hint">按交易时间倒序 <span aria-hidden="true">↓</span></span></div>
+            <div id="transaction-status" class="content-status" role="status" hidden></div>
+            <div id="transaction-table-wrap" class="table-wrap" hidden><table><thead><tr><th scope="col">交易对象 / 摘要</th><th scope="col">交易时间</th><th scope="col" class="category-column">分类</th><th scope="col" class="source-column" title="同一笔可有多个来源，仍只计一笔；账单来源不代表支付渠道">账单来源</th><th scope="col" class="amount-column">金额</th><th scope="col"><span class="sr-only">详情</span></th></tr></thead><tbody id="transaction-rows"></tbody></table></div>
+            <div class="pagination"><p id="transaction-range">—</p><div><label class="page-size">每页 <select id="transaction-page-size" aria-label="每页交易数"><option>25</option><option selected>50</option><option>100</option></select> 条</label><button type="button" id="transaction-prev" class="icon-button" aria-label="上一页交易" disabled>‹</button><span id="transaction-page">1 / 1</span><button type="button" id="transaction-next" class="icon-button" aria-label="下一页交易" disabled>›</button></div></div>
+          </div>
+          <p class="data-note"><span aria-hidden="true">ⓘ</span> 交易记录提供支付线索，不能单凭付款记录确认所购商品。金额按原币种展示。</p>
+        </section>
+
+        <section id="assets-view" aria-label="实物资产" hidden><div class="assets-heading"><div><h2>我的物品</h2><p>留存购买信息，建立清晰的个人物品档案。</p></div><button type="button" id="create-asset" class="button primary"><span aria-hidden="true">＋</span> 登记资产</button></div><div id="asset-status" class="content-status" role="status" hidden></div><div id="asset-cards" class="asset-grid"></div><div class="pagination asset-pagination"><p id="asset-range">—</p><div><button type="button" id="asset-prev" class="icon-button" aria-label="上一页资产" disabled>‹</button><span id="asset-page">1 / 1</span><button type="button" id="asset-next" class="icon-button" aria-label="下一页资产" disabled>›</button></div></div></section>
+        <section id="audit-view" aria-label="SQL 审计中心" hidden>
+          <div class="audit-banner"><div><span class="audit-eyebrow">QUERY OBSERVATORY</span><h2>每一次查询，都有迹可循。</h2><p>查看 MCP 只读 SQL 调用，定位失败、拦截与耗时。</p></div><div class="audit-banner-note"><span class="audit-lock">◈</span><strong>只读 · 私有审计</strong><small>新记录保留原始 SQL 与绑定参数</small></div></div>
+          <form id="audit-filters" class="audit-toolbar">
+            <label class="field">时间范围<select id="audit-period"><option value="1">近 24 小时</option><option value="7" selected>近 7 天</option><option value="30">近 30 天</option><option value="all">全部记录</option><option value="custom">自定义日期</option></select></label>
+            <label class="field" id="audit-from-field" hidden>开始日期<input id="audit-from" type="date"></label><label class="field" id="audit-to-field" hidden>结束日期<input id="audit-to" type="date"></label>
+            <label class="field audit-search">SQL 搜索<input id="audit-search" type="search" placeholder="例如 transactions、count" maxlength="200"></label>
+            <label class="field">查询结果<select id="audit-status"><option value="">全部结果</option><option value="success">成功</option><option value="rejected">策略拒绝</option><option value="error">执行错误</option><option value="running">未完成</option></select></label>
+            <label class="audit-check"><input id="audit-slow" type="checkbox">慢查询 ≥ 1 秒</label>
+            <button type="submit" class="button primary">应用筛选</button><button type="button" id="audit-refresh" class="button secondary" aria-label="刷新审计">↻ 刷新</button>
+          </form>
+          <div class="audit-context"><div id="audit-chips" class="audit-chips"></div><button type="button" id="audit-reset" class="text-button">重置筛选</button><time id="audit-snapshot">尚未读取</time></div>
+          <p id="audit-message" class="audit-message" role="status" aria-live="polite"></p>
+          <div id="audit-content" hidden>
+            <div id="audit-metrics" class="audit-metrics"></div>
+            <div class="audit-main-grid">
+              <article class="audit-panel"><div class="audit-panel-title"><div><h3>调用轨迹</h3><p id="audit-timeline-note">同一时间范围，按结果堆叠</p></div><span class="audit-panel-tag">点击时段可下钻</span></div><div id="audit-legend" class="audit-legend"></div><div id="audit-timeline" class="audit-timeline" aria-label="调用时间分布"></div><div id="audit-axis" class="audit-axis"></div><p id="audit-bucket-readout" class="audit-readout">悬停或聚焦查看时段详情，点击筛选。</p></article>
+              <article class="audit-panel"><div class="audit-panel-title"><div><h3>结果分布</h3><p>拒绝与执行错误分别统计</p></div></div><div id="audit-donut" class="audit-donut"></div><div id="audit-status-legend" class="audit-status-legend"></div></article>
+            </div>
+            <div class="audit-secondary-grid">
+              <article class="audit-panel"><div class="audit-panel-title"><div><h3>耗时分布</h3><p>仅成功与执行错误 · 请求总耗时</p></div><span id="audit-average" class="audit-panel-tag"></span></div><div id="audit-latency" class="audit-horizontal-bars"></div></article>
+              <article class="audit-panel"><div class="audit-panel-title"><div><h3>拒绝与错误原因</h3><p>点击原因，定位相关调用</p></div></div><div id="audit-errors" class="audit-error-list"></div></article>
+            </div>
+            <article class="audit-panel audit-pattern-panel"><div class="audit-panel-title"><div><h3>高频 SQL 模式</h3><p>当前筛选内的前 8 个模式 · 点击查看同类调用</p></div><span id="audit-pattern-count" class="audit-panel-tag"></span></div><div id="audit-patterns" class="audit-patterns"></div></article>
+            <article class="audit-panel audit-record-panel"><div class="audit-panel-title"><div><h3>调用明细 <span id="audit-record-count" class="count-badge"></span></h3><p>每条审计记录代表一次调用，包含失败和拒绝</p></div><label class="field"><select id="audit-sort" aria-label="审计排序"><option value="recent">时间倒序</option><option value="slow">耗时倒序</option></select></label></div><div class="audit-record-head"><span>时间（北京时间）</span><span>结果</span><span>SQL 语句</span><span>总耗时</span><span>返回行</span><span></span></div><div id="audit-records" role="list"></div><div class="audit-pagination"><span id="audit-page-note"></span><div><button type="button" id="audit-prev" class="button secondary">上一页</button><button type="button" id="audit-next" class="button secondary">下一页</button></div></div></article>
+            <p class="audit-footnote">这里只统计经 PAM 的 MCP 只读 SQL 调用，不包含 PostgreSQL 的全部内部语句。统计与明细来自同一只读快照，刷新本页不新增审计。“返回行数”不代表扫描行数；“未完成”表示尚未记录终态。</p>
+          </div>
+        </section>
+        <footer class="workspace-footer"><span>PAM <span aria-hidden="true">/</span> 个人资产管理</span><span>把记录留给时间。</span></footer>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="detail-dialog" class="drawer" aria-labelledby="detail-title"><div class="dialog-header"><div><p class="eyebrow">TRANSACTION DETAIL</p><h2 id="detail-title">交易详情</h2></div><button type="button" data-close="detail-dialog" class="icon-button" aria-label="关闭交易详情">×</button></div><div id="detail-body" class="dialog-body"></div></dialog>
+  <dialog id="asset-dialog" class="asset-dialog" aria-labelledby="asset-dialog-title"><div class="dialog-header"><div><p class="eyebrow">ASSET INVENTORY</p><h2 id="asset-dialog-title">登记资产</h2></div><button type="button" data-close="asset-dialog" class="icon-button" aria-label="关闭资产表单">×</button></div><form id="asset-form"><div class="dialog-body"><p class="form-description">记录物品本身，以及你希望留存的购买信息。</p><div class="form-grid"><label class="field wide">资产名称 *<input name="name" required maxlength="200" placeholder="例如：日常使用的相机"></label><label class="field">分类<input name="category" maxlength="200" placeholder="例如：摄影器材"></label><label class="field">状态<select name="status"><option value="active">使用中</option><option value="stored">已收纳</option><option value="loaned">已借出</option><option value="sold">已售出</option><option value="retired">已退役</option><option value="lost">已遗失</option></select></label><label class="field">品牌<input name="brand" maxlength="200"></label><label class="field">型号<input name="model" maxlength="200"></label><label class="field wide">序列号<input name="serial_number" maxlength="200" spellcheck="false" autocomplete="off"></label></div><h3 class="form-section-heading">购买信息 <span>选填</span></h3><div class="form-grid"><label class="field">购买日期<input name="purchase_date" type="date"></label><label class="field">购买价格<input name="purchase_price" type="text" inputmode="decimal" pattern="[0-9]{1,16}(\.[0-9]{1,4})?" placeholder="未知可留空"></label><label class="field">币种 *<input name="currency" value="CNY" required pattern="[A-Za-z]{3}" maxlength="3" spellcheck="false"></label><label class="field">购买商户<input name="merchant" maxlength="200"></label><label class="field wide">关联交易 ID<input name="related_transaction_id" pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" placeholder="可从交易详情复制，未知可留空" spellcheck="false" autocomplete="off"></label><label class="field wide">备注<textarea name="notes" rows="4" maxlength="16000" placeholder="记录物品细节、配件或其他值得留存的信息"></textarea></label></div><p id="asset-form-error" class="error-message" role="alert" hidden></p><button type="button" id="asset-load-retry" class="button secondary" hidden>重新读取资产</button></div><div class="dialog-footer"><button type="button" id="delete-asset" class="text-button danger" hidden>删除资产</button><div><button type="button" data-close="asset-dialog" class="button secondary">取消</button><button type="submit" id="save-asset" class="button primary">保存资产 </button></div></div></form></dialog>
+  <dialog id="delete-dialog" class="confirm-dialog" aria-labelledby="delete-title"><div class="dialog-body"><div class="delete-symbol" aria-hidden="true">×</div><h2 id="delete-title">删除这件资产？</h2><p>资产登记将被删除，相关交易和原始记录会继续保留。</p><p id="delete-error" class="error-message" role="alert" hidden></p></div><div class="dialog-footer"><button type="button" data-close="delete-dialog" class="button secondary">保留资产</button><button type="button" id="confirm-delete" class="button destructive">确认删除</button></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <dialog id="audit-detail" class="drawer audit-detail" aria-labelledby="audit-detail-title"><div class="dialog-header"><div><p class="eyebrow">QUERY DETAIL</p><h2 id="audit-detail-title">调用详情</h2></div><button type="button" id="audit-detail-close" class="icon-button" aria-label="关闭审计详情">×</button></div><div id="audit-detail-body" class="dialog-body"></div><div class="dialog-footer"><button type="button" id="audit-copy" class="button secondary">复制 SQL</button><button type="button" id="audit-same-pattern" class="button primary">查看同类调用</button></div></dialog>
+</body>
+</html>

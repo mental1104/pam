@@ -1,0 +1,65 @@
+# 可移植的独立部署；NAS 通过根 home Compose include 本文件，并使用私有 env 文件。
+services:
+  pam-postgres:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_DB: pam
+      POSTGRES_USER: pam_admin
+      POSTGRES_PASSWORD: ${PAM_POSTGRES_PASSWORD:?required}
+      PAM_MIGRATOR_PASSWORD: ${PAM_MIGRATOR_PASSWORD:?required}
+      PAM_APP_PASSWORD: ${PAM_APP_PASSWORD:?required}
+      PAM_READER_PASSWORD: ${PAM_READER_PASSWORD:?required}
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes:
+      - pam-postgres:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/10-pam.sh:ro
+    networks: [pam-private]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U pam_admin -d pam']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 512m
+    stop_grace_period: 60s
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '2'}}
+  pam-migrate:
+    image: pam:v0
+    restart: 'no'
+    command: [migrate]
+    environment:
+      PAM_DATABASE_URL: postgres://pam_migrator:${PAM_MIGRATOR_PASSWORD:?required}@pam-postgres:5432/pam?sslmode=disable
+    depends_on:
+      pam-postgres: {condition: service_healthy}
+    networks: [pam-private]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '2'}}
+  pam:
+    image: pam:v0
+    restart: always
+    environment:
+      PAM_DATABASE_URL: postgres://pam_app:${PAM_APP_PASSWORD:?required}@pam-postgres:5432/pam?sslmode=disable
+      PAM_READER_DATABASE_URL: postgres://pam_reader:${PAM_READER_PASSWORD:?required}@pam-postgres:5432/pam?sslmode=disable
+      PAM_ACCESS_TOKEN: ${PAM_ACCESS_TOKEN:?required}
+      PAM_ADDR: :8080
+    depends_on:
+      pam-migrate: {condition: service_completed_successfully}
+    ports: ['127.0.0.1:${PAM_PORT:-18088}:8080']
+    networks: [pam-private, default]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    healthcheck:
+      test: [CMD, /pam, healthcheck]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging: {driver: json-file, options: {max-size: 10m, max-file: '2'}}
+networks:
+  pam-private:
+    internal: true
+volumes:
+  pam-postgres:

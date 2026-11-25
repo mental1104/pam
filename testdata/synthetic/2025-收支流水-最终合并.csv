@@ -1,0 +1,5 @@
+日期,时间,交易对象或摘要,收支方向,金额(元),币种,备注,一级分类,二级分类,合并记录ID,主记录平台,来源平台,交易性质,收支统计标记,来源记录明细
+2025-02-03,12:34,Synthetic Electronics,支出,-999.00,CNY,Synthetic fixture only,购物,电子设备,fixture-001,微信,微信,消费,计入支出,Synthetic source A
+2025-02-04,,Synthetic Employer,收入,100.0100,CNY,Synthetic fixture only,收入,其他,fixture-002,银行,银行,收入,计入收入,Synthetic source B
+2025-02-05,13:00,Synthetic Transfer,不涉及收支,50.00,CNY,Synthetic fixture only,资金往来,转账,fixture-003,支付宝,支付宝,内部转账,不计入,Synthetic source C
+,14:00,Synthetic Unknown,支出,-5.00,CNY,Synthetic fixture only,其他,,fixture-004,银行,银行,待核实,待核实,Synthetic source D

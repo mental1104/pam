@@ -1,0 +1,94 @@
+name: PAM validation
+
+# 用户明确授权本仓库 CI；仅正式 PR 运行，草稿更新不消耗验证资源。
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pam-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  apple:
+    if: ${{ github.event.pull_request.draft == false }}
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Apple toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Swift core and local Vision smoke tests
+        working-directory: ios
+        run: swift test
+      - name: iOS simulator build
+        if: ${{ !cancelled() }}
+        run: xcodebuild -project ios/PAM.xcodeproj -scheme PAM -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+
+  backend:
+    if: ${{ github.event.pull_request.draft == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: pam
+          POSTGRES_USER: pam_admin
+          POSTGRES_PASSWORD: ci-admin-synthetic-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U pam_admin -d pam"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      # 仅隔离 CI 合成库凭据；不引用生产 Secret 或 NAS 数据。
+      PGHOST: 127.0.0.1
+      PGUSER: pam_admin
+      PGDATABASE: pam
+      PGPASSWORD: ci-admin-synthetic-only
+      PAM_MIGRATOR_PASSWORD: ci-migrator-synthetic-only
+      PAM_APP_PASSWORD: ci-app-synthetic-only
+      PAM_READER_PASSWORD: ci-reader-synthetic-only
+      PAM_DATABASE_URL: postgres://pam_migrator:ci-migrator-synthetic-only@127.0.0.1:5432/pam?sslmode=disable
+      PAM_TEST_DATABASE_URL: postgres://pam_app:ci-app-synthetic-only@127.0.0.1:5432/pam?sslmode=disable
+      PAM_TEST_WRITER_URL: postgres://pam_app:ci-app-synthetic-only@127.0.0.1:5432/pam?sslmode=disable
+      PAM_TEST_READER_URL: postgres://pam_reader:ci-reader-synthetic-only@127.0.0.1:5432/pam?sslmode=disable
+      PAM_ACCESS_TOKEN: pam-isolated-acceptance-token-20261125
+      CGO_ENABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Initialize roles and migrate isolated database
+        run: |
+          POSTGRES_USER=pam_admin POSTGRES_DB=pam sh deploy/init-db.sh
+          go run ./cmd/pam migrate
+      - name: Tests, vet and race with real database permissions
+        run: |
+          go test -count=1 ./...
+          go vet ./...
+          go test -race -count=1 ./...
+      - name: Independent HTTP and MCP acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          go build -o /tmp/pam-ci ./cmd/pam
+          PAM_DATABASE_URL="$PAM_TEST_DATABASE_URL" PAM_READER_DATABASE_URL="$PAM_TEST_READER_URL" /tmp/pam-ci serve > /tmp/pam-ci.log 2>&1 &
+          backend_pid=$!
+          trap 'kill "$backend_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:8080/health/ready >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/health/ready >/dev/null
+          PAM_ACCEPTANCE_URL=http://127.0.0.1:8080 go test -count=1 ./tests/acceptance

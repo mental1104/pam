@@ -1,0 +1,15 @@
+.git
+ios
+.env*
+docs
+bin
+data
+private
+evidence
+backups
+corpus
+*.dump
+*.db
+*.sqlite*
+*.pem
+*.key

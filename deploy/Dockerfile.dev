@@ -1,0 +1,4 @@
+# Go 和 libpgquery 的 CGO 编译器只在开发/构建镜像中存在。
+FROM golang:1.26-bookworm
+WORKDIR /source
+ENV CGO_ENABLED=1
