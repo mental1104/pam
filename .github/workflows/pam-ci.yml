@@ -69,6 +69,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      # 只检查公开源码边界，不读取生产配置，也不把匹配到的内容输出到日志。
+      - name: Public-content boundary check
+        run: bash scripts/check-public-content.sh
       - name: Initialize roles and migrate isolated database
         run: |
           POSTGRES_USER=pam_admin POSTGRES_DB=pam sh deploy/init-db.sh
